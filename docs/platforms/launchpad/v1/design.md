@@ -61,14 +61,6 @@ repoints the rule back to the fleet and tears the dedicated service down. Either
 change to the app's routing alone — the app's domain and callers are untouched, and the app serves
 continuously through the cutover.
 
-## The Cryo seam
-
-The seam between Launchpad and Cryo is one-way: **Launchpad places, Cryo runs.** Launchpad decides
-that a given app belongs on the shared fleet and routes its Host to the fleet's target group; Cryo
-owns everything from there — starting the backend on demand, supervising it, and reaping it when
-idle. Launchpad never operates the fleet, and Cryo never makes placement or entitlement decisions.
-A free app is simply one whose Host Launchpad has pointed at the fleet.
-
 ## Baseline
 
 Every app gets a fixed baseline regardless of tier or what its configuration opts into: a
@@ -129,6 +121,38 @@ that app's schema alone — never on the platform schema and never on another ap
 backend connects under a separate runtime role with no DDL rights, so DDL happens only at deploy
 time, under the migrator role, scoped to the one schema. The migration file format and the role
 model are owned by Houston's shared data layer; Launchpad is the component that applies them.
+
+## Seams
+
+### Cryo
+
+The seam is one-way: **Launchpad places, Cryo runs.** Launchpad decides that a given app belongs on
+the shared fleet and routes its Host to the fleet's target group; Cryo owns everything from there —
+starting the backend on demand, supervising it, and reaping it when idle. Launchpad never operates
+the fleet, and Cryo never makes placement or entitlement decisions. A free app is simply one whose
+Host Launchpad has pointed at the fleet.
+
+### Billing
+
+Billing owns the organization's subscription and what it entitles. Launchpad reads that entitlement
+to choose a tier and never interprets, prices, or changes it — an entitlement change is an event
+Launchpad reacts to by graduating the app, not a decision it participates in. The dependency runs
+one way: Launchpad depends on billing, and billing knows nothing about tiers or placement.
+
+### Data
+
+The data layer owns the logical database: the schema-per-app model, the migrator and runtime roles
+and their grants, and the migration file format. Launchpad owns none of it — it is the component
+that *applies* a migration, under a role the data layer defines, against a schema the data layer's
+model describes. Tier does not enter this seam: an app's schema and roles are identical whichever
+tier its backend runs on.
+
+### Snacks and CI
+
+CI produces the three inputs a deploy consumes — the backend binary, the frontend bundle, and the
+configuration — and Launchpad consumes all three without building any of them. The configuration
+schema is Launchpad's; snacks delivers the app-side primitive that emits a valid one. Because both
+tiers run the same binary, CI's output does not depend on where the app will run.
 
 ## Boundaries
 

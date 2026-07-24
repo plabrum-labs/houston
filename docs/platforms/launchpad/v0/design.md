@@ -21,6 +21,35 @@ there: validate the configuration, reconcile the app's infrastructure to match i
 database migration, roll the backend to the new binary, publish the frontend, and confirm the app
 is serving before the deploy is considered done.
 
+## Control
+
+Launchpad is a long-running Houston service, not a step that runs inside CI. It exposes the deploy
+API that CI calls, and it holds the state that makes reconciliation safe and repeatable:
+
+- **The app registry** — one record per app, carrying its identity, its current configuration, and
+  the state of its most recent deploy. The registry is what makes an app a first-class object in
+  Houston rather than a side effect of a CI run, so the Houston UI can show what is deployed and
+  what happened last.
+- **Infrastructure state** — one Pulumi stack per app, keyed by the app's namespace. Because state
+  lives with Launchpad rather than with the caller, a deploy is reconciliation against known prior
+  state, not a fresh guess at what exists.
+- **A per-app deploy lock** — deploys for one app run one at a time. Two concurrent reconciliations
+  of a single namespace would race on the same resources; deploys for *different* apps are
+  independent and run concurrently.
+
+## Deploy lifecycle
+
+A deploy either reaches "serving" or it leaves the app as it was. After the migration runs and the
+new backend starts, Launchpad holds the deploy open until the new task passes its health checks.
+If it does, the old task drains and the deploy is **complete**. If it does not, the new task is
+stopped, the previous task keeps serving, and the deploy is **failed** — recorded on the app's
+registry record with the reason.
+
+Schema migrations are **forward-only**: a failed deploy does not unwind the migration that preceded
+it. An app's migration must therefore be compatible with the binary already running, since that
+binary is what continues to serve when a deploy fails. This is the one constraint Launchpad's
+deploy model places on how apps write migrations.
+
 ## Configuration schema
 
 The app's configuration is the contract between the app and Launchpad. The app authors it as
@@ -73,6 +102,10 @@ the platform means modeling a capability once inside Launchpad, after which any 
 it. Because Launchpad owns the expansion, every instance of a capability across every app is
 built, scoped, and named the same way.
 
+Capabilities that carry credentials resolve at reconcile time, not at runtime. An app's **secrets**
+are bound into its task definition when Launchpad reconciles it, so the running backend reads them
+from its own environment and never calls a secret store or holds credentials to one.
+
 ## Reconciliation
 
 Launchpad reconciles an app's declared configuration against what actually exists in the cloud,
@@ -119,8 +152,10 @@ Launchpad manages each app's domain. DNS is served from Cloudflare, where Launch
 records that point an app's frontend at Cloudflare Pages and its API subdomain straight at the
 AWS backend, kept DNS-only so backend traffic reaches AWS without an extra edge hop. TLS is
 terminated with Cloudflare-managed certificates for the frontend and ACM certificates on the AWS
-side for the API. An app that declares only its default domain still gets working DNS and TLS with
-no further configuration.
+side for the API. Every app is reachable at a **default domain** — a subdomain of Houston's own
+platform domain, derived from the app's identity — the moment it first deploys, so an app that
+declares no domain at all is still live and addressable. Custom domains are additive: an app that
+declares one answers on both.
 
 ## Database migrations
 
@@ -133,6 +168,25 @@ backend connects under a separate runtime role with no DDL rights, so DDL happen
 time, under the migrator role, scoped to the one schema. The migration file format and the role
 model are owned by Houston's shared data layer; Launchpad is the component that applies them.
 
+## Seams
+
+### Data
+
+The data layer owns the logical database: the schema-per-app model, the migrator and runtime roles
+and their grants, and the migration file format. Launchpad owns none of it — it is the component
+that *applies* a migration, under a role the data layer defines, against a schema the data layer's
+model describes. The dependency runs one way: Launchpad depends on the data layer's role model, and
+the data layer knows nothing about deploys.
+
+### Snacks and CI
+
+CI produces the three inputs a deploy consumes — the backend binary, the frontend bundle, and the
+configuration — and Launchpad consumes all three without building any of them. The configuration
+schema is Launchpad's; snacks delivers the app-side primitive that emits a valid one, so an app
+authors its configuration the same way it takes any other platform dependency. The dependency runs
+one way: Launchpad depends on CI producing artifacts, and never reaches back into how they are
+built.
+
 ## Boundaries
 
 Launchpad provisions and deploys per-app infrastructure and nothing beneath it. It does not
@@ -140,5 +194,13 @@ provision the shared substrate — the ECS cluster, the ALB, Aurora, and Redis a
 `infra/` and already exist; Launchpad attaches apps to them. It does not build the artifacts it
 deploys — CI produces the backend binary and the frontend bundle. It does not run application
 code beyond supervising the dedicated task through ECS, and it does not own application data or
-perform application-level authentication. It is the layer that makes an app's declared
-infrastructure real and puts the app on the internet — nothing above that, nothing below it.
+perform application-level authentication. It makes no placement decision: every app's backend is a
+dedicated task, so there is no tier to choose and nothing about an organization's subscription
+reaches Launchpad. It is the layer that makes an app's declared infrastructure real and puts the
+app on the internet — nothing above that, nothing below it.
+
+## Not yet designed
+
+- **Observability of the deployed app.** Where a dedicated task's logs and metrics go, and how much
+  of that wiring Launchpad owns versus the observability platform.
+- **Deleting an app.** Tearing a namespace down, and what happens to its schema and its data.
