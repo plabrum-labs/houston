@@ -88,30 +88,34 @@ security model). Everything *exhaustive* lives one altitude down, in `implementa
 
 ## implementation.md — build altitude
 
-A single file of numbered, build-ordered steps that realize `design.md`. Each step is an
-**independently-buildable slice** — the unit that later becomes a ticket or PR.
+A single file of **named slices** that realize `design.md`. Each slice is independently buildable —
+the unit that later becomes a ticket or PR — and is identified by its name, never by a number.
 
 ```
 # <Platform> — v<N> implementation
 
 <One-line BLUF: what building this version entails.>
 
-## Step 1 — <slice>
+## <Slice name>
 Implements: <the design.md section this realizes>
+Depends on: <the slices that must exist first — or "Nothing">
 
 <The exhaustive detail: schemas, state machines, interfaces, retry/concurrency, error handling,
 tech choices, deployment workflow. This is where premature-in-a-spec detail belongs.>
 
-## Step 2 — <slice>
+## <Slice name>
 Implements: <design section>
+Depends on: <slices>
 ...
 ```
 
 Conventions:
-- **Numbering is build order**, not just enumeration. Number sparsely if you expect inserts (`10, 20, 30`) or accept the occasional renumber.
-- **Every step names the design section it implements** (`Implements: …`). This makes steps traceable and surfaces two defects: a design section no step covers (a gap), and a step mapping to nothing in the design (scope creep).
-- **Keep it one file.** `## Step N — <slice>` sections, not a directory of files — a platform's build fits in one document.
-- Steps sequence the build *within this version*. Sequencing *across* platforms toward a deliverable is `planning/`'s job, not this file's.
+- **Don't number the slices.** Build order is a *partial* order — slices branch, and several are usually buildable in parallel. A number asserts a total order the graph can't back up, and it is the one part of a slice guaranteed to change when the plan does. Name the slice instead: a name is a stable identifier, survives reordering, and makes a better ticket title than "step 7".
+- **Two back-references, pulling in opposite directions.** `Implements:` names the design section the slice realizes, and catches scope creep (a slice mapping to nothing in the design) and gaps (a design section no slice covers). `Depends on:` names the prerequisite slices, and catches ordering mistakes while making parallelizable work visible. A slice with no prerequisites says `Depends on: Nothing` — the entry points should be obvious at a glance.
+- **Refer to other slices by name in prose**, never by position ("the app's target group", or "the target group from *Ingress*" — not "the step 5 target group"). Positional references rot the moment a slice moves.
+- **Order the document as a sensible default build sequence** — a reader going top to bottom should be able to build in that order — but let `Depends on:` carry the real constraints.
+- **Keep it one file.** `## <Slice name>` sections, not a directory of files — a platform's build fits in one document.
+- Slices sequence the build *within this version*. Sequencing *across* platforms toward a deliverable is `planning/`'s job, not this file's.
 
 ## Voice, content, and length
 
@@ -147,5 +151,5 @@ These apply to `design.md` above all, but the voice carries across every doc und
 - No history, no decision log, no "previously/superseded" (everywhere-rules).
 - Concise — no sentence a reader could delete without losing the intended state; length not leaking implementation detail up from `implementation.md`.
 - `design.md`: has Boundaries; detail is illustrative only, not exhaustive.
-- `implementation.md`: steps are build-ordered and each carries an `Implements:` back-reference.
+- `implementation.md`: slices are named not numbered, each carries `Implements:` and `Depends on:`, and no prose refers to a slice by position.
 - Nothing exhaustive leaked up into `design.md`; nothing re-argues the design down in `implementation.md`.

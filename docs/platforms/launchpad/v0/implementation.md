@@ -2,12 +2,14 @@
 
 Building v0 means standing up a Go service that owns an app registry and one Pulumi stack per app,
 then teaching it to reconcile a validated configuration into a dedicated ECS task, an ALB routing
-rule, a migrated schema, a published frontend, and working DNS. Steps are numbered by build order;
-the first end-to-end deploy lands at step 70.
+rule, a migrated schema, a published frontend, and working DNS. The document runs in a workable
+build order; each slice's `Depends on:` line carries the real constraints. The first end-to-end
+deploy lands at *Migration runner*.
 
-## Step 10 — Configuration schema and validator
+## Configuration schema and validator
 
 Implements: Configuration schema
+Depends on: Nothing
 
 Define the app configuration as a Go type set with a generated JSON Schema, and a validator that
 runs before anything else in a deploy.
@@ -31,9 +33,10 @@ pointer to the offending field so the caller can report the exact line.
 The schema is versioned with an explicit `version` field. The validator accepts the current version
 and rejects anything else with a message naming the version it expects.
 
-## Step 20 — App registry, deploy records, and the deploy API
+## App registry and deploy API
 
 Implements: Control, The deploy handshake
+Depends on: Configuration schema and validator
 
 Stand up the Launchpad service itself: a Go service in Houston's platform schema, with the registry
 tables and the HTTP API CI calls.
@@ -57,9 +60,10 @@ deploy. A second deploy for the same app blocks rather than failing, so a rapid 
 serializes instead of racing. Deploys for different apps take different locks and run concurrently.
 The lock releases with its session, so a crashed service does not strand an app.
 
-## Step 30 — Pulumi state backend and the per-app stack
+## Pulumi state and the per-app stack
 
 Implements: Control, Reconciliation
+Depends on: App registry and deploy API
 
 Wire Pulumi's Automation API into the service so reconciliation runs in-process rather than by
 shelling out.
@@ -80,16 +84,17 @@ per-resource: `houston:app`, `houston:tenant`, `houston:managed-by=launchpad`. T
 also enforces the naming prefix, so a resource that escapes the app's namespace is impossible to
 construct rather than merely discouraged.
 
-## Step 40 — Baseline: namespace, IAM role, and log group
+## Namespace, IAM role, and log group
 
 Implements: Baseline
+Depends on: Pulumi state and the per-app stack
 
 The first resources the stack program creates, and the ones every app gets regardless of its
 configuration.
 
 The app's **task role** is an IAM role the running backend assumes, with a trust policy admitting
 only ECS tasks and a permission boundary restricting it to resources tagged with the app's name.
-It starts with no permissions beyond the boundary; capabilities attach policies to it in step 120.
+It starts with no permissions beyond the boundary; declared capabilities attach policies to it.
 A separate **execution role** — shared across apps, not per-app — lets ECS pull images and write
 logs.
 
@@ -101,9 +106,10 @@ The database schema and its roles are created here too, by calling the data laye
 path with the app's name — Launchpad requests the schema, the data layer creates it along with the
 app's migrator and runtime roles and their grants.
 
-## Step 50 — Ingress: target group and listener rule
+## Ingress routing
 
 Implements: Baseline
+Depends on: Pulumi state and the per-app stack
 
 Give the app a routable address before there is anything to route to.
 
@@ -115,27 +121,29 @@ sequence in the registry so two concurrent app creations cannot collide on a pri
 The rule matches every domain the app declares, including its default domain, so adding a custom
 domain later modifies one rule rather than creating another.
 
-## Step 60 — Dedicated ECS service and rolling deploy
+## Dedicated ECS service
 
 Implements: Backend runtime
+Depends on: Namespace, IAM role, and log group; Ingress routing
 
 The task definition and the service that runs it — the point at which an app has a backend.
 
 The task definition carries the app's binary as a container image, its CPU and memory from the
-configuration, its task role from step 40, its log configuration pointing at the app's log group,
-and its environment: the configuration's plain variables, plus the Aurora and Redis endpoints
-injected from the substrate. Each deploy registers a new revision rather than mutating one.
+configuration, its task role, its log configuration pointing at the app's log group, and its
+environment: the configuration's plain variables, plus the Aurora and Redis endpoints injected from
+the substrate. Each deploy registers a new revision rather than mutating one.
 
-The ECS service runs on Fargate in private subnets with the app's security group, registers into
-the step 50 target group, and is configured for rolling replacement — `minimumHealthyPercent` at
-100 and `maximumPercent` at 200, so the new task is healthy and registered before the old one
-drains. Deployment circuit breaker is on, so ECS itself rolls back a task that never stabilizes.
-Desired count sits within the configuration's scaling bounds, with an application autoscaling target
+The ECS service runs on Fargate in private subnets with the app's security group, registers into the
+app's target group, and is configured for rolling replacement — `minimumHealthyPercent` at 100 and
+`maximumPercent` at 200, so the new task is healthy and registered before the old one drains.
+Deployment circuit breaker is on, so ECS itself rolls back a task that never stabilizes. Desired
+count sits within the configuration's scaling bounds, with an application autoscaling target
 tracking CPU between them.
 
-## Step 70 — Migration runner
+## Migration runner
 
 Implements: Database migrations
+Depends on: Namespace, IAM role, and log group; App registry and deploy API
 
 Run the app's `migrations/` folder against its schema, before the new binary takes traffic.
 
@@ -150,11 +158,12 @@ deploy at the `migrating` state, leaving the previous task serving and no partia
 failed file. Migrations already applied stay applied — the forward-only property the design commits
 to.
 
-## Step 80 — Deploy lifecycle: health gate and failure handling
+## Deploy lifecycle and health gate
 
 Implements: Deploy lifecycle
+Depends on: Dedicated ECS service; Migration runner
 
-Turn the sequence of steps into a lifecycle that either reaches serving or leaves the app alone.
+Turn the sequence of slices into a lifecycle that either reaches serving or leaves the app alone.
 
 After the service update, the orchestrator polls the ECS deployment and the target group until the
 new tasks are healthy and registered, or a timeout elapses. Success advances the deploy to
@@ -167,9 +176,10 @@ Deploy state transitions are written before their work begins, so a service rest
 deploys stuck in a non-terminal state and marks them failed on startup rather than leaving them
 open forever.
 
-## Step 90 — Preview gate and namespace guard
+## Preview gate and namespace guard
 
 Implements: Reconciliation
+Depends on: Pulumi state and the per-app stack
 
 Interpose the safety gate between validation and apply, once there is a real stack to guard.
 
@@ -179,12 +189,13 @@ database schema, buckets, and anything carrying retained data — or if any chan
 falls outside the app's namespace prefix. A refusal fails the deploy with the offending resources
 named, and applies nothing.
 
-The namespace check is belt-and-braces against the step 30 transformation: the transformation makes
+The namespace check is belt-and-braces against the stack transformation: the transformation makes
 an out-of-namespace resource hard to construct, and this gate makes one impossible to apply.
 
-## Step 100 — Frontend publish
+## Frontend publish
 
 Implements: Frontend hosting
+Depends on: Pulumi state and the per-app stack
 
 Publish the frontend bundle to Cloudflare Pages, independent of the backend rollout.
 
@@ -196,9 +207,10 @@ production. A `spa` frontend gets a fallback rewrite serving `index.html` for un
 The frontend publish does not gate the backend rollout and the backend rollout does not gate it —
 they run concurrently within a deploy, and the deploy completes when both have.
 
-## Step 110 — DNS, TLS, and the default domain
+## DNS, TLS, and the default domain
 
 Implements: Domains, DNS, and TLS
+Depends on: Ingress routing; Frontend publish
 
 Make the app reachable at the names it declares.
 
@@ -212,9 +224,10 @@ verification record proving control before Launchpad writes anything else. TLS i
 for the frontend, and an ACM certificate validated by DNS for the API domain, requested by the stack
 and attached to the ALB listener.
 
-## Step 120 — Capability framework and the first capabilities
+## Capability framework and the first capabilities
 
 Implements: Capabilities
+Depends on: Namespace, IAM role, and log group
 
 Generalize capability expansion, then implement three.
 
