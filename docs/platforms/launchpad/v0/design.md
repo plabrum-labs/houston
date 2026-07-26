@@ -110,17 +110,23 @@ from its own environment and never calls a secret store or holds credentials to 
 
 Launchpad reconciles an app's declared configuration against what actually exists in the cloud,
 using Pulumi as its execution engine. The app's schema is the desired state; Launchpad translates
-it into Pulumi resources and drives them to match. This runs behind two gates:
+it into Pulumi resources and drives them to match. Safety here is structural: the resources and
+credentials Launchpad defines make a destructive or out-of-bounds change unreachable, rather than
+inspecting a diff at deploy time and deciding whether to allow it through.
 
 1. **Validation.** The configuration is checked against Launchpad's schema before any
    infrastructure is touched — an unknown capability, a malformed field, or a name collision is
    rejected at submit time with a clear error.
-2. **Preview.** Launchpad previews the reconciliation before applying it and refuses a change that
-   would destroy or replace a stateful resource, or that reaches outside the app's own namespace.
-   A deploy only applies changes that are safe and in-bounds.
-
-Every resource Launchpad creates for an app lives under that app's namespace, derived from its
-identity, so no app's reconciliation can name, read, or mutate another app's resources.
+2. **Protection.** Every stateful resource Launchpad creates — an app's database schema and role,
+   any capability holding durable data — is declared protected and keyed by the app's immutable
+   identity, never its mutable display name. Pulumi refuses to delete or replace a protected
+   resource as a side effect of reconciling a declared configuration, so no rename, typo, or
+   malformed reconciliation can ever reach a customer's data that way. Deleting an app is a
+   distinct, deliberate operation outside ordinary reconciliation, not something this protection
+   stands in the way of.
+3. **Isolation.** Each app's stack runs under its own IAM role, scoped to exactly that app's
+   namespace. One app's reconciliation holds no credential that reaches another app's resources,
+   so the boundary holds regardless of what the program itself does.
 
 ## Backend runtime
 

@@ -82,11 +82,16 @@ built, scoped, and named the same way.
 ## Reconciliation
 
 Launchpad reconciles an app's declared configuration against what exists in the cloud, using
-Pulumi as its execution engine. This runs behind two gates: **validation** of the configuration
-against the schema before any infrastructure is touched, and a **preview** that refuses a change
-which would destroy or replace a stateful resource or reach outside the app's namespace. Every
-resource Launchpad creates for an app lives under that app's namespace, so no app's reconciliation
-can name, read, or mutate another app's resources.
+Pulumi as its execution engine. Safety here is structural, not a decision made at deploy time:
+**validation** rejects an unknown capability, a malformed field, or a name collision against the
+schema before any infrastructure is touched; every stateful resource — an app's database schema
+and role, any capability holding durable data — is declared protected and keyed by the app's
+immutable identity, so Pulumi refuses to delete or replace it as a side effect of reconciling a
+declared configuration, and no rename, typo, or malformed reconciliation can reach a customer's
+data that way (deleting an app outright is a distinct, deliberate operation, not something this
+stands in the way of); and each app's stack runs under its own IAM role scoped to exactly that
+app's namespace, so one app's reconciliation holds no credential that reaches another app's
+resources.
 
 ## Backend deploys
 
