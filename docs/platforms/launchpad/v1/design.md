@@ -152,11 +152,11 @@ that *applies* a migration, under a role the data layer defines, against a schem
 model describes. Tier does not enter this seam: an app's schema and roles are identical whichever
 tier its backend runs on.
 
-### Snacks and CI
+### CLI and CI
 
 CI produces the three inputs a deploy consumes — the backend binary, the frontend bundle, and the
 configuration — and Launchpad consumes all three without building any of them. The configuration
-schema is Launchpad's; snacks delivers the app-side primitive that emits a valid one. Because both
+schema is Launchpad's; the CLI delivers the app-side primitive that emits a valid one. Because both
 tiers run the same binary, CI's output does not depend on where the app will run.
 
 ## Boundaries

@@ -184,11 +184,11 @@ that *applies* a migration, under a role the data layer defines, against a schem
 model describes. The dependency runs one way: Launchpad depends on the data layer's role model, and
 the data layer knows nothing about deploys.
 
-### Snacks and CI
+### CLI and CI
 
 CI produces the three inputs a deploy consumes — the backend binary, the frontend bundle, and the
 configuration — and Launchpad consumes all three without building any of them. The configuration
-schema is Launchpad's; snacks delivers the app-side primitive that emits a valid one, so an app
+schema is Launchpad's; the CLI delivers the app-side primitive that emits a valid one, so an app
 authors its configuration the same way it takes any other platform dependency. The dependency runs
 one way: Launchpad depends on CI producing artifacts, and never reaches back into how they are
 built.

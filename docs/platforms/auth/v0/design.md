@@ -3,7 +3,7 @@
 Auth is Houston's identity and access platform. It is the layer above Data (`../data/`) that
 answers three questions on every request: who is this, which organization are they acting as, and
 does that organization's membership let them act at all. Any app that has its own users and
-customer organizations pulls Auth in through Snacks rather than deriving login and membership
+customer organizations pulls Auth in through the CLI rather than deriving login and membership
 itself. Auth issues sessions and sets the request-scoping variables Data's row-level-security
 policies read; it does not define the policies or own the schema they protect.
 
@@ -92,7 +92,7 @@ composes and sends the one transactional message v0 needs; it takes no dependenc
 comms platform for delivery tracking, retries, or bounce handling, because a login link has no
 audit or delivery-state requirement beyond "did the send call succeed."
 
-### Snacks
+### CLI
 
 Auth is delivered as a primitive: the identity, membership, session, and RLS-wiring mechanics are
 **pinned** — every app relies on them working identically, the same way every app relies on Data's

@@ -14,7 +14,7 @@ composes in rather than re-deriving, modeled on Linear.
 - [ ] Task model: item, status / workflow, assignee, priority, ordering, relations.
 - [ ] Seam with the ontology, state machines, and Events.
 - [ ] Seam with Notifications (assignment / mention notifications).
-- [ ] How much is a pinned primitive vs. an owned surface an app rewrites (via snacks).
+- [ ] How much is a pinned primitive vs. an owned surface an app rewrites (via the CLI).
 
 ## Open questions
 
