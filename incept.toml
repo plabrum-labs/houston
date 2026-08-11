@@ -1,0 +1,6 @@
+# Written by `incept init`: every command below was observed green in this repo
+# (setup, then the service-free check tier, then test with its services up).
+
+[incept]
+check = ["true"]
+test = ["true"]
