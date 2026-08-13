@@ -1,18 +1,18 @@
 # Launchpad — v0 implementation
 
-Building v0 means standing up a Go service that owns an app registry and one Pulumi stack per app,
-then teaching it to reconcile a validated configuration into a dedicated ECS task, an ALB routing
-rule, a migrated schema, a published frontend, and working DNS. The document runs in a workable
-build order; each slice's `Depends on:` line carries the real constraints. The first end-to-end
-deploy lands at *Migration runner*.
+Building v0 means standing up a Python service that owns an app registry and one Pulumi stack per
+app, then teaching it to reconcile a validated configuration into a dedicated ECS task, an ALB
+routing rule, a migrated schema, a published frontend, and working DNS. The document runs in a
+workable build order; each slice's `Depends on:` line carries the real constraints. The first
+end-to-end deploy lands at *Migration runner*.
 
 ## Configuration schema and validator
 
 Implements: Configuration schema
 Depends on: Nothing
 
-Define the app configuration as a Go type set with a generated JSON Schema, and a validator that
-runs before anything else in a deploy.
+Define the app configuration as a set of `msgspec` structs with a generated JSON Schema, and a
+validator that runs before anything else in a deploy.
 
 The schema's top level carries `identity`, `domains`, `capabilities`, `backend`, and `frontend`.
 `identity.name` is the root of everything downstream — it derives the namespace, the database
@@ -38,8 +38,8 @@ and rejects anything else with a message naming the version it expects.
 Implements: Control, The deploy handshake
 Depends on: Configuration schema and validator
 
-Stand up the Launchpad service itself: a Go service in Houston's platform schema, with the registry
-tables and the HTTP API CI calls.
+Stand up the Launchpad service itself: a Litestar service in Houston's platform schema, with the
+registry tables and the HTTP API CI calls.
 
 Two tables in the platform schema. `apps` holds one row per app — its name, its tenant, its current
 validated configuration as JSONB, its namespace, and timestamps. `deploys` holds one row per deploy
@@ -69,10 +69,10 @@ Wire Pulumi's Automation API into the service so reconciliation runs in-process 
 shelling out.
 
 State lives in an S3 backend under a prefix Launchpad owns, one stack per app named from the app's
-namespace, with the passphrase held in Houston's secret store. The stack's program is an inline Go
-function that receives the validated configuration and constructs the app's resources — the same
-binary that serves the API constructs the infrastructure, so there is no separate Pulumi project to
-version independently.
+namespace, with the passphrase held in Houston's secret store. The stack's program is an inline
+Python function that receives the validated configuration and constructs the app's resources — the
+same process that serves the API constructs the infrastructure, so there is no separate Pulumi
+project to version independently.
 
 The substrate every app attaches to — the ECS cluster ARN, the ALB and its listener ARN, the VPC
 and its subnets, the Aurora endpoint, the Redis endpoint — is read from `infra/`'s stack outputs
@@ -128,10 +128,10 @@ Depends on: Namespace, IAM role, and log group; Ingress routing
 
 The task definition and the service that runs it — the point at which an app has a backend.
 
-The task definition carries the app's binary as a container image, its CPU and memory from the
-configuration, its task role, its log configuration pointing at the app's log group, and its
-environment: the configuration's plain variables, plus the Aurora and Redis endpoints injected from
-the substrate. Each deploy registers a new revision rather than mutating one.
+The task definition carries the app's container image, its CPU and memory from the configuration,
+its task role, its log configuration pointing at the app's log group, and its environment: the
+configuration's plain variables, plus the Aurora and Redis endpoints injected from the substrate.
+Each deploy registers a new revision rather than mutating one.
 
 The ECS service runs on Fargate in private subnets with the app's security group, registers into the
 app's target group, and is configured for rolling replacement — `minimumHealthyPercent` at 100 and
@@ -145,12 +145,14 @@ tracking CPU between them.
 Implements: Database migrations
 Depends on: Namespace, IAM role, and log group; App registry and deploy API
 
-Run the app's `migrations/` folder against its schema, before the new binary takes traffic.
+Run the app's `migrations/` folder against its schema, before the new image takes traffic.
 
 The runner receives the migration folder as part of the deploy's artifacts and connects as the app's
 migrator role — credentials fetched from the secret store at deploy time and never handed to the
 app. It sets `search_path` to the app's schema alone, applies pending migrations in order inside a
 transaction per migration, and records each in the migration history table the data layer defines.
+Alembic runs in-process against that connection rather than as a subprocess, so the migrator
+credentials never leave the service.
 
 The runner asserts its own scoping before it runs: the role it connected as must be the app's
 migrator role and it must hold DDL rights on exactly one schema. A migration that fails aborts the
@@ -175,6 +177,26 @@ crash-looped, since these point at different bugs in the app.
 Deploy state transitions are written before their work begins, so a service restart mid-deploy finds
 deploys stuck in a non-terminal state and marks them failed on startup rather than leaving them
 open forever.
+
+## MCP control surface
+
+Implements: Control surface
+Depends on: App registry and deploy API; Deploy lifecycle and health gate
+
+Expose the registry and deploy API as an **MCP server** an operator drives through an agent, since
+v0 has no UI. The server is a thin, stateless front over the existing HTTP API — it introduces no
+persistence and no authority of its own, only a tool surface.
+
+The tools: `list_apps` and `get_app` read the registry; `list_deploys` and `get_deploy` read deploy
+status and history; `register_app` reserves a name exactly as `POST /apps` does; `redeploy_app`
+re-invokes the deploy pipeline for an app against the artifact references its registry already holds
+— the image digest and frontend bundle of its current deploy — producing no new artifacts.
+`redeploy_app` therefore depends on those references outliving the deploy that created them, which
+fixes the frontend bundle as a **retained, addressable artifact** rather than a transient upload.
+
+Authentication is a Houston **admin credential**, distinct from the service-to-service credential CI
+uses; the operator identity is carried on every call, so an MCP-driven action is attributable and
+runs under the same per-app deploy lock and safety gates as a CI-driven one.
 
 ## Preview gate and namespace guard
 
@@ -231,9 +253,9 @@ Depends on: Namespace, IAM role, and log group
 
 Generalize capability expansion, then implement three.
 
-A capability is a Go interface: a name, a schema fragment for its configuration, and an expand
-function that receives the app's identity and its capability configuration and returns the resources
-plus the IAM policy statements to attach to the app's task role. Capabilities are registered in a
+A capability is a `Protocol`: a name, a schema fragment for its configuration, and an expand method
+that receives the app's identity and its capability configuration and returns the resources plus the
+IAM policy statements to attach to the app's task role. Capabilities are registered in a
 map at service start; the validator and the stack program both read that map, so adding a capability
 is one registration and no change to either.
 

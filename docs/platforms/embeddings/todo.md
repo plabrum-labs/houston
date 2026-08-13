@@ -10,7 +10,7 @@ The vector-search primitive an app pulls in for semantic matching over its own d
 
 ## To design
 
-- [ ] Port the snacks embeddings module to Go.
+- [ ] Adopt the snacks embeddings module as this platform's implementation.
 - [ ] Vector storage: pgvector in the shared Postgres vs. a separate store.
 - [ ] Embedding-generation pipeline and which provider(s).
 - [ ] Seam with the ontology — embedding an app's objects for search.

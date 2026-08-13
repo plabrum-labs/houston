@@ -18,7 +18,7 @@ hand-authored orchestration.
 
 ## To design
 
-- [ ] Auto-derivation of the tool surface from the `huma` / ontology API.
+- [ ] Auto-derivation of the tool surface from the Litestar / ontology OpenAPI surface.
 - [ ] Bundled-agent packaging: how a builder "turns it on," branding, on-by-default vs opt-in.
 - [ ] MCP server exposure of the same surface.
 - [ ] Async agent tasks: asynq-triggered ephemeral workspace, RLS-scoped pulls into a per-task

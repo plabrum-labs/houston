@@ -2,7 +2,7 @@
 
 Launchpad is Houston's deploy-and-provisioning platform. It is a platform within Houston, not a
 separate service: it holds Houston's authority over per-app cloud infrastructure and runs as part
-of Houston's flows. Its job is to turn a built app — a backend binary, a frontend build, and a
+of Houston's flows. Its job is to turn a built app — a backend bundle, a frontend build, and a
 declared configuration — into running, reachable infrastructure, and to place each app's backend
 on the runtime tier its organization is entitled to.
 
@@ -13,7 +13,7 @@ attaches each app to it, provisioning only what belongs to a single app.
 
 ## The deploy handshake
 
-An app deploys through Launchpad. During CI the app builds its Go backend binary and its frontend
+An app deploys through Launchpad. During CI the app builds its backend bundle and its frontend
 bundle and emits a configuration in Launchpad's schema. CI hands all three to Launchpad, and
 Launchpad drives the deploy: validate the configuration, reconcile the app's infrastructure, run
 the app's schema migration, place and roll the backend, publish the frontend, and confirm the app
@@ -44,8 +44,9 @@ organization's entitlement:
    started on demand and reaped when idle. The fleet is shared substrate; Launchpad places the app
    onto it rather than provisioning anything of its own.
 
-Both modes run the same backend binary, so an app is byte-identical in either — only where it runs
-and how it is supervised differ.
+Both modes run the same backend bundle — a dedicated task runs it inside Houston's base image, and
+the shared fleet forks into it — so an app is byte-identical in either; only where it runs and how
+it is supervised differ.
 
 ## Subscription-aware placement
 
@@ -95,11 +96,11 @@ resources.
 
 ## Backend deploys
 
-Deploying rolls the app's backend to the new binary. For a dedicated task, Launchpad rolls the
+Deploying rolls the app's backend to the new bundle. For a dedicated task, Launchpad rolls the
 app's ECS service — start the new task, wait for health checks, drain and stop the old one — so
 the deploy touches only that app and serves through the changeover. For a fleet app, Launchpad
-publishes the new binary for Cryo to pick up on the backend's next start. Either way the schema
-migration runs before the new binary takes traffic, so the binary always meets a schema it
+publishes the new bundle for Cryo to pick up on the backend's next start. Either way the schema
+migration runs before the new bundle takes traffic, so the backend always meets a schema it
 expects.
 
 ## Frontend hosting
@@ -154,10 +155,10 @@ tier its backend runs on.
 
 ### CLI and CI
 
-CI produces the three inputs a deploy consumes — the backend binary, the frontend bundle, and the
+CI produces the three inputs a deploy consumes — the backend bundle, the frontend bundle, and the
 configuration — and Launchpad consumes all three without building any of them. The configuration
 schema is Launchpad's; the CLI delivers the app-side primitive that emits a valid one. Because both
-tiers run the same binary, CI's output does not depend on where the app will run.
+tiers run the same bundle, CI's output does not depend on where the app will run.
 
 ## Boundaries
 

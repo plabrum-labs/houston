@@ -1,7 +1,7 @@
 # Blackstar (Ontology) — todo
 
-The typed data model — `ent` schema + `huma` typed API — that every other platform reads and
-writes through. Houston's equivalent of Foundry's Ontology: the object / link / action layer
+The typed data model — SQLAlchemy models + a Litestar typed API — that every other platform reads
+and writes through. Houston's equivalent of Foundry's Ontology: the object / link / action layer
 every other tool consumes.
 
 - Codename: Blackstar
@@ -9,8 +9,9 @@ every other tool consumes.
 
 ## What it is
 
-The shared object model an app defines once in Go (`ent`) and serves as a typed OpenAPI surface
-(`huma`). Other platforms — the agent, access control, analysis — consume this surface rather
+The shared object model an app defines once in Python — SQLAlchemy models plus `msgspec` DTOs —
+and serves as a typed OpenAPI surface that Litestar generates from the same annotations that type
+the handlers. Other platforms — the agent, access control, analysis — consume this surface rather
 than reaching into raw tables. Distinct from the data layer (`../data/`), which owns physical
 isolation, RLS, roles, and migrations; Blackstar owns the *logical object model* on top of it.
 

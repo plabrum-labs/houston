@@ -2,7 +2,7 @@
 
 Launchpad is Houston's deploy-and-provisioning platform. It is a platform within Houston, not a
 separate service: it holds Houston's authority over per-app cloud infrastructure and runs as
-part of Houston's flows. Its job is to turn a built app — a backend binary, a frontend build, and
+part of Houston's flows. Its job is to turn a built app — a backend image, a frontend build, and
 a declared configuration — into running, reachable infrastructure. It takes each app from "built
 in CI" to "live on the internet with the resources it asked for."
 
@@ -14,11 +14,11 @@ domain, and its database schema.
 
 ## The deploy handshake
 
-An app deploys through Launchpad. During CI the app builds two artifacts — its Go backend binary
-and its frontend bundle — and emits a configuration in Launchpad's schema describing what the app
-is and what it needs. CI hands all three to Launchpad, and Launchpad drives the deploy from
+An app deploys through Launchpad. During CI the app builds two artifacts — its backend container
+image and its frontend bundle — and emits a configuration in Launchpad's schema describing what
+the app is and what it needs. CI hands all three to Launchpad, and Launchpad drives the deploy from
 there: validate the configuration, reconcile the app's infrastructure to match it, run the app's
-database migration, roll the backend to the new binary, publish the frontend, and confirm the app
+database migration, roll the backend to the new image, publish the frontend, and confirm the app
 is serving before the deploy is considered done.
 
 ## Control
@@ -36,6 +36,22 @@ API that CI calls, and it holds the state that makes reconciliation safe and rep
 - **A per-app deploy lock** — deploys for one app run one at a time. Two concurrent reconciliations
   of a single namespace would race on the same resources; deploys for *different* apps are
   independent and run concurrently.
+
+## Control surface
+
+Launchpad exposes its registry and deploy API to an operator as an **MCP server**. Houston has no
+dashboard in this version, so the MCP is how a person — working through an agent — drives and
+observes the fleet: it lists and inspects apps and their deploys, registers a new app, and re-runs
+a deploy for an app that already has one. It holds no state and grants no authority of its own —
+every action is an ordinary call into the deploy API, under the same validation, per-app locking,
+and safety gates as a deploy CI triggers.
+
+A **driven deploy** reconciles an app against the artifacts its registry already records — the
+backend image and frontend bundle its last deploy was given — so an operator can re-roll or recover
+an app without a CI run. Producing new artifacts stays CI's alone; the MCP only re-invokes a deploy
+over artifacts that already exist. The operator authenticates with a Houston admin credential,
+distinct from the service-to-service credential CI holds, and every MCP action is attributable to
+that identity.
 
 ## Deploy lifecycle
 
@@ -186,7 +202,7 @@ the data layer knows nothing about deploys.
 
 ### CLI and CI
 
-CI produces the three inputs a deploy consumes — the backend binary, the frontend bundle, and the
+CI produces the three inputs a deploy consumes — the backend image, the frontend bundle, and the
 configuration — and Launchpad consumes all three without building any of them. The configuration
 schema is Launchpad's; the CLI delivers the app-side primitive that emits a valid one, so an app
 authors its configuration the same way it takes any other platform dependency. The dependency runs
@@ -198,7 +214,7 @@ built.
 Launchpad provisions and deploys per-app infrastructure and nothing beneath it. It does not
 provision the shared substrate — the ECS cluster, the ALB, Aurora, and Redis are Houston's
 `infra/` and already exist; Launchpad attaches apps to them. It does not build the artifacts it
-deploys — CI produces the backend binary and the frontend bundle. It does not run application
+deploys — CI produces the backend image and the frontend bundle. It does not run application
 code beyond supervising the dedicated task through ECS, and it does not own application data or
 perform application-level authentication. It makes no placement decision: every app's backend is a
 dedicated task, so there is no tier to choose and nothing about an organization's subscription

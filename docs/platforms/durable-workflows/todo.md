@@ -18,7 +18,7 @@ provision → notify, refunds), Comms/Notifications delivery, and Agent/Builder 
 
 - [ ] Engine choice: self-hosted Temporal, Temporal Cloud, or a lighter alternative — weighed
       against Houston's shared-lightweight-infra, minimal-cost thesis (`vision/overview.md`).
-- [ ] Workflow/activity model in Go and how a platform author defines one.
+- [ ] Workflow/activity model in Python and how a platform author defines one.
 - [ ] Worker deployment shape: one shared fleet across all platforms, or per-platform workers.
 - [ ] Retryable vs. non-retryable error taxonomy, and how a platform's activity code declares which
       is which.

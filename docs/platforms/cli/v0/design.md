@@ -33,7 +33,7 @@ The registry is the catalog the CLI resolves against. An **entry** is a named un
 source files making up its owned surface, the packages making up its pinned core, and the entries it
 composes.
 
-The registry is **ecosystem-agnostic**. Houston apps are Go on the server and TypeScript in the
+The registry is **ecosystem-agnostic**. Houston apps are Python on the server and TypeScript in the
 browser, and a single app pulls from both, so an entry declares which ecosystem its pinned core
 resolves in and where in the repo its owned source lands. The CLI delegates dependency installation
 to the native package manager for that ecosystem and performs the file copy itself. Nothing about

@@ -81,7 +81,7 @@ sort, each column's display type and label, an entity's state machine and its st
 each field's type, label, placeholder, ordering, and — where a field references another entity — the
 entity it points at and the action that creates one.
 
-This metadata is declared where the schema is declared, in the app's Go source, so a field and its
+This metadata is declared where the schema is declared, in the app's Python source, so a field and its
 presentation cannot drift apart. It is published as a served surface, not a build artifact, so
 codegen reads the same running app the frontend will call.
 

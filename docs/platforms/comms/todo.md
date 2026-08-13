@@ -11,7 +11,7 @@ email channel that feeds Notifications (`../notifications/`).
 
 ## To design
 
-- [ ] Port the snacks email-transport service to Go.
+- [ ] Adopt the snacks email-transport service as this platform's implementation.
 - [ ] State-machine model for email lifecycle (queued → sent → delivered / bounced).
 - [ ] Seam with Launchpad's `email` capability (SES identity, DKIM / SPF): Comms is the
       application-level service; Launchpad provisions the sending infrastructure.

@@ -12,7 +12,7 @@ also the backbone Automate, Approvals, Notifications, and Writeback subscribe to
 
 ## To design
 
-- [ ] Port the snacks event / audit emission to Go.
+- [ ] Adopt the snacks event / audit emission as this platform's implementation.
 - [ ] The subscription / pub-sub surface other platforms consume.
 - [ ] Delivery guarantees, ordering, and replay / audit-query model.
 - [ ] Seam with the ontology's actions and state machines as event sources.

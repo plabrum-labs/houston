@@ -11,7 +11,7 @@ behind Houston's success case: an app charging a SaaS fee via Houston.
 
 ## To design
 
-- [ ] Port the snacks billing / Stripe integration to Go.
+- [ ] Adopt the snacks billing / Stripe integration as this platform's implementation.
 - [ ] Subscription model: plans, entitlements, per-org subscription state.
 - [ ] Seam with Launchpad's subscription-aware placement (v1) — the entitlement that decides an
       app's runtime tier reads from here.
