@@ -1,0 +1,30 @@
+rules:
+  - id: strenum-use-auto
+    message: >
+      StrEnum members must use auto() instead of hardcoded strings.
+      Use `$MEMBER = auto()` — auto() produces the lowercase member name automatically.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-inside: |
+          class $CLASS(StrEnum):
+              ...
+      - pattern: $MEMBER = "$VALUE"
+      - metavariable-regex:
+          metavariable: $MEMBER
+          regex: '^(?!__).+'
+
+  - id: strenum-member-caps
+    message: >
+      StrEnum member names must be UPPER_SNAKE_CASE.
+      Rename `$MEMBER` to its uppercase equivalent so auto() produces the correct value.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-inside: |
+          class $CLASS(StrEnum):
+              ...
+      - pattern: $MEMBER = ...
+      - metavariable-regex:
+          metavariable: $MEMBER
+          regex: '^(?!__)[A-Za-z].*[a-z].*'

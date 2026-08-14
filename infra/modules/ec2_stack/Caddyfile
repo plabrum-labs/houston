@@ -1,0 +1,4 @@
+# API_DOMAIN is set via .env — defaults to localhost for local dev, real domain on EC2
+{$API_DOMAIN:localhost} {
+    reverse_proxy api:8000
+}
