@@ -2,8 +2,8 @@
 
 The source app mounts a module-level `search_router` guarded by `requires_session`
 and injects the concrete `User` to apply an org-scope WHERE clause. The platform owns
-neither, so this is a factory: the app injects its guards (D15 seam), and row
-scoping is left to RLS (D18) — the per-model org/user policy filters the search
+neither, so this is a factory: the app injects its guards, and row
+scoping is left to RLS — the per-model org/user policy filters the search
 just as it filters CRUD, so the handler needs no principal at all.
 """
 
@@ -83,7 +83,7 @@ def build_search_router(*, path: str = "/", guards: Sequence[Guard] = ()) -> Rou
             if not term:
                 continue
 
-            # No org-scope WHERE clause — RLS scopes each model's rows (D18).
+            # No org-scope WHERE clause — RLS scopes each model's rows.
             search_clause = model_cls.search_filter(term)
             if search_clause is None:
                 continue

@@ -1,6 +1,6 @@
 """Time-series aggregation for CRUD `/data` endpoints.
 
-Ported from the source app's `platform/data/service`. One forced change (D18): the
+Ported from the source app's `platform/data/service`. One forced change: the
 `organization_id` parameter and its two `org_id_col == organization_id` WHERE
 conditions are dropped — row scoping is RLS's job, identical to how `crud.py`
 and `search_routes.py` were decoupled. The remaining `getattr(model, ...)` calls

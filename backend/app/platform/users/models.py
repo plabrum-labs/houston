@@ -45,7 +45,7 @@ class _UserMixinBase[R: Enum](BaseDBModel):
     local `_Mixin` is invisible to it. Every tenancy column the factory adds at
     runtime therefore has to be re-declared here, or `User.organization_id` /
     `User.role` do not exist statically and `User` silently fails to satisfy
-    `app.platform.state_machine.roles.Actor[R]` (D30).
+    `app.platform.state_machine.roles.Actor[R]`.
 
     The declarations are annotation-only and this class is `__abstract__`, so the
     real columns still come from `_Mixin`'s `@declared_attr`s.

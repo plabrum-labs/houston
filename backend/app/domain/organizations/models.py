@@ -1,4 +1,4 @@
-"""Concrete tenancy models — the required subclasses of houston's abstract mixins (D4).
+"""Concrete tenancy models — the required subclasses of houston's abstract mixins.
 
 Every houston app MUST define a concrete `User` and `Organization`: houston ships
 `UserMixin` / `OrganizationBase` abstract (it owns the base tenancy + RLS convention,

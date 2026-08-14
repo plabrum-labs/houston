@@ -1,6 +1,6 @@
 """Billing webhook routes — receives events from Stripe.
 
-The split (D17): the platform owns the generic Stripe plumbing — signature
+The split: the platform owns the generic Stripe plumbing — signature
 verification and the routing/dispatch scaffold. The per-event domain handlers
 (e.g. `invoice.payment_succeeded` → mutate a domain state machine) name
 `app/domain/*` models, so they CANNOT live here; they register against the
@@ -26,7 +26,7 @@ WebhookHandler = Callable[[stripe.Event, AsyncSession], Awaitable[None]]
 class BillingWebhookRegistry:
     """Domain webhook handlers keyed by Stripe event type.
 
-    The seam for the billing split: the app registers handlers that mutate its
+    The billing split: the app registers handlers that mutate its
     own domain models against the platform/connect registries below; the platform
     owns the signature verification + dispatch and names no event types or
     models itself.

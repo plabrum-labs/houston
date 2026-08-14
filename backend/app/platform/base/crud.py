@@ -2,13 +2,13 @@
 
 The platform doesn't own the app's concrete `User` or its auth guards, so two things
 are decoupled from the source app's version:
-  - the principal is the `Actor` protocol (D2); the concrete `User` is injected by
+  - the principal is the `Actor` protocol; the concrete `User` is injected by
     the app and passed through to the transformer callables — the platform never reads
     an attribute off it,
   - the base guard (`requires_session` in the source app) is injected via `base_guards`
-    (same seam as `build_action_router`, D15).
+    (same guard-injection pattern as `build_action_router`).
 
-Row scoping is **entirely RLS's job** (D18): the request transaction sets
+Row scoping is **entirely RLS's job**: the request transaction sets
 `app.organization_id` / `app.user_id`, and each model's `OrgScopedMixin` /
 `UserScopedMixin` policy filters rows in Postgres. The source app re-applies a
 `scope_col == user.x` WHERE clause on top of that; the platform drops it as redundant
@@ -145,7 +145,7 @@ def make_crud_controller[ModelT: BaseDBModel, ListT: ActionableList, DetailT: Ac
         limit = max(1, min(data.limit, 200))
         offset = max(0, data.offset)
 
-        # No scope WHERE clause — RLS scopes rows by org/user (D18).
+        # No scope WHERE clause — RLS scopes rows by org/user.
         base = select(model)
 
         # Role-based query scoping
@@ -256,7 +256,7 @@ def make_crud_controller[ModelT: BaseDBModel, ListT: ActionableList, DetailT: Ac
             data: TimeSeriesDataRequest,
             transaction: AsyncSession = Dependency(skip_validation=True),
         ) -> TimeSeriesDataResponse:
-            # RLS scopes the rows; query_time_series_data takes no org_id (D18).
+            # RLS scopes the rows; query_time_series_data takes no org_id.
             return await query_time_series_data(transaction, model, _data_fields, data, _data_timestamp_field)
 
         @get("/data/schema", guards=guards, operation_id=f"data_schema_{model_name}")

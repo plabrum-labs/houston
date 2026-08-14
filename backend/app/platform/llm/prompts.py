@@ -88,7 +88,7 @@ def _context_block(ctx: PromptContext | None) -> str:
     today = datetime.now(tz=UTC).strftime("%Y-%m-%d")
     lines = [f"Today's date is {today} (UTC)."]
     if ctx and ctx.user is not None:
-        # Role is the most decision-relevant fact about the user — it gates
+        # Role is the most important fact about the user for the model — it determines
         # which tools the executor will run. Surfacing it lets the model
         # avoid suggesting actions the user can't take.
         lines.append(f"The current user's role is: {ctx.user.role}.")

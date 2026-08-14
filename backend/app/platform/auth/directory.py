@@ -1,4 +1,4 @@
-"""Generic `UserDirectory` implementations over any `AuthUserMixin` subclass (D19).
+"""Generic `UserDirectory` implementations over any `AuthUserMixin` subclass.
 
 Two directories exist on purpose:
 

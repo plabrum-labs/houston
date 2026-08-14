@@ -2,7 +2,7 @@
 
 The source app mounts this as a module-level `schema_router` guarded by
 `requires_local`. The platform doesn't own that guard, so this is a factory — the app
-injects its guards (D15 seam).
+injects its guards.
 """
 
 from collections.abc import Sequence

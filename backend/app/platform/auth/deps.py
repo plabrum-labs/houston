@@ -1,7 +1,7 @@
 """Auth dependency providers.
 
 The platform ships only `provide_auth_service` — it composes `AuthService` from the
-app-provided `user_directory` + `magic_link_mailer` deps (D19). The `user` /
+app-provided `user_directory` + `magic_link_mailer` deps. The `user` /
 `organization` principal providers stay app-side (they return the app's concrete
 `User`/`Organization` off `request.user`).
 """

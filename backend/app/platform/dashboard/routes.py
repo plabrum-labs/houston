@@ -67,7 +67,7 @@ def build_dashboard_router(*, path: str = "/dashboard", guards: Sequence[Guard] 
 
     The platform doesn't own the app's auth guards, so the module-level router from
     the source app (which hardcoded `guards=[requires_session]`) becomes a factory
-    with `guards` injected — same seam as `build_action_router` / the CRUD
+    with `guards` injected — same guard-injection pattern as `build_action_router` / the CRUD
     controller factories / `build_document_router` / `build_thread_router`.
     """
     return Router(

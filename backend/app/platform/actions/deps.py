@@ -1,6 +1,6 @@
 """Typed dependencies for actions.
 
-`ActionDeps` is the principal seam. The platform owns only the framework fields
+`ActionDeps` is where the app chooses which services its actions receive. The platform owns only the framework fields
 (`user`/`organization`/`transaction`/`request`); apps subclass it to add their own
 services (billing, email, sm_service, config, task_queues) and may re-annotate
 `organization` to their concrete model. The app owns `provide_action_deps`
@@ -9,7 +9,7 @@ services (billing, email, sm_service, config, task_queues) and may re-annotate
 `organization` is typed `OrganizationBase` (the platform-owned tenant-root base,
 an `id`-bearing `BaseDBModel`) so platform-owned actions can read `deps.organization.id`
 when creating an org-scoped row that has no parent to inherit from. The app's
-concrete `Organization(OrganizationBase)` satisfies it; reads stay RLS-scoped (D18).
+concrete `Organization(OrganizationBase)` satisfies it; reads stay RLS-scoped.
 """
 
 from dataclasses import dataclass

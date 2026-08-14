@@ -1,7 +1,7 @@
 """Generic auth routes — magic-link request / verify / logout.
 
 The demo-login shortcut (app-specific emails) and `/me` (hydrates an app-specific
-profile/domain model) stay per-app (D19); the app mounts them alongside this router.
+profile/domain model) stay per-app; the app mounts them alongside this router.
 """
 
 import logging

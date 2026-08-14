@@ -1,7 +1,7 @@
 """Embedding client dependency — app-injected singleton.
 
 The concrete client (provider selection) is wired by the app at startup via
-`set_embedding_client()` — mirrors the `events.set_queue_resolver` seam in this
+`set_embedding_client()` — mirrors `events.set_queue_resolver` in this
 same module. The platform ships no concrete provider; the app builds a
 `BaseEmbeddingClient` (e.g. an `LLMEmbeddingClient` over its LLM client, deferred
 with the `llm` port) and injects it.

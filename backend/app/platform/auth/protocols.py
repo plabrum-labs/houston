@@ -1,4 +1,4 @@
-"""Auth seams (D19).
+"""Auth protocols the app implements.
 
 The app implements these against its concrete `User` + email service; the platform
 names no concrete domain type.
@@ -13,7 +13,7 @@ from app.platform.state_machine.roles import Actor
 
 @runtime_checkable
 class UserDirectory(Protocol):
-    """Principal lookup/create seam (the D2 `Actor` seam extended to lookup/create)."""
+    """Looks up or creates the app's principal (an `Actor`) by email or id."""
 
     async def get_or_create_by_email(self, email: str) -> tuple[Actor[Any], bool]: ...
 
@@ -24,7 +24,7 @@ class UserDirectory(Protocol):
 
 @runtime_checkable
 class MagicLinkMailer(Protocol):
-    """Narrow email seam so auth doesn't depend on the full `comms` port."""
+    """Narrow email interface so auth doesn't depend on the full `comms` port."""
 
     def validate_email_address(self, email: str) -> str: ...
 

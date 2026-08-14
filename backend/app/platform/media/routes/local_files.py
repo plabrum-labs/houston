@@ -57,7 +57,7 @@ def build_local_files_router(*, path: str = "", guards: Sequence[Guard] = ()) ->
 
     The source app applied `guards=[requires_local]` directly on each handler; the platform
     doesn't own the app's auth guards, so the guard becomes an injected
-    router-level `guards` (same seam as the other route factories). The app wires
+    router-level `guards` (same pattern as the other route factories). The app wires
     its `requires_local` here. The `exclude_from_auth=True` flags are Litestar
     flags (not `app.*`) and stay on the handlers verbatim.
     """

@@ -3,7 +3,7 @@
 One `Config` class holds every field the platform reads — DB URLs, auth secrets,
 S3 buckets, SES/comms identity, Stripe keys, LLM/embeddings knobs, and template
 dirs — each backed by an env var with a sensible default. There is no config ABC
-and no `configure()`/`get_config()` seam: Houston owns its platform and is the only
+and no `configure()`/`get_config()` indirection: Houston owns its platform and is the only
 consumer, so platform code imports the concrete `config` singleton directly.
 
 `get_config()` returns `TestConfig` when `ENV == "testing"` (pytest sets this before

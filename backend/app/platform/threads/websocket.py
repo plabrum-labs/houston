@@ -117,7 +117,7 @@ def build_thread_handler(
 
     The platform doesn't own the app's auth guards, so the module-level
     `@websocket_listener(..., guards=[requires_session])` from the source app
-    becomes a factory with `guards` injected — same seam as the route factories.
+    becomes a factory with `guards` injected — same pattern as the route factories.
     """
     return websocket_listener(
         path,

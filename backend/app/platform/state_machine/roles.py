@@ -25,7 +25,7 @@ class Actor[R: Enum](Protocol):
     `id: Mapped[Sqid]` never matches a protocol declaring `id: int`, however
     the attribute behaves at runtime. Declaring the mapped types is what makes
     "`User` satisfies `Actor` with no adapter" true statically as well as at
-    runtime (D30). `Mapped` is invariant here because the members are mutable,
+    runtime. `Mapped` is invariant here because the members are mutable,
     hence `Mapped[Sqid]` (what every `BaseDBModel` declares) rather than
     `Mapped[int]`.
 
@@ -33,7 +33,7 @@ class Actor[R: Enum](Protocol):
     multi-tenant throughout (`OrgScopedMixin`, RLS `app.organization_id`):
     platform-owned code needs the caller's org to create org-scoped rows and to
     set up the RLS/tenant context on non-action paths (e.g. websocket handlers).
-    Read *filtering* stays RLS's job (D18) — this is only write/context access.
+    Read *filtering* stays RLS's job — this is only write/context access.
     """
 
     id: Mapped[Sqid]

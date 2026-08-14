@@ -2,7 +2,7 @@
 
 The app subclasses houston's base `ActionDeps` (re-annotating `organization` to its
 concrete model) and owns `provide_action_deps` — houston ships only
-`provide_action_registry`. This is the principal seam: the app decides which services
+`provide_action_registry`. The app decides here which services
 its actions receive. Add `billing` / `email` / `config` / `task_queues` fields here as
 you adopt those services.
 """
