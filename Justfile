@@ -5,8 +5,10 @@ default:
 
 # ─── Install ──────────────────────────────────────────────────────────────────
 
+install: install-backend
+
 # Install backend dependencies
-install:
+install-backend:
     cd backend && uv sync --dev
 
 # ─── Database ─────────────────────────────────────────────────────────────────
@@ -62,8 +64,10 @@ dev-worker:
 
 # ─── Tests ────────────────────────────────────────────────────────────────────
 
+test: test-backend
+
 # Run backend tests
-test:
+test-backend:
     cd backend && uv run pytest -v
 
 # ─── Code Quality ─────────────────────────────────────────────────────────────
@@ -76,14 +80,14 @@ semgrep:
 semgrep-test:
     semgrep --test semgrep/
 
-# Lint + format all code (backend)
+# Lint + format all code
 lint: lint-backend
 
 # Lint + format backend
 lint-backend:
     cd backend && uv run ruff check --fix . && uv run ruff format .
 
-# Type-check all code (backend)
+# Type-check all code
 check: check-backend
 
 # Type-check backend
