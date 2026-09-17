@@ -62,6 +62,10 @@ dev-backend:
 dev-worker:
     cd backend && uv run litestar --app app.index:app workers run
 
+# Seed the dev database with an org, a user (dev@houston.dev), and a few apps
+seed-dev:
+    cd backend && uv run python -m scripts.seed_dev
+
 # ─── Tests ────────────────────────────────────────────────────────────────────
 
 test: test-backend

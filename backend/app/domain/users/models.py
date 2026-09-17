@@ -10,10 +10,11 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.users.roles import Role
+from app.platform.auth.models import AuthUserMixin
 from app.platform.users.models import UserMixin
 
 
-class User(UserMixin(role_enum=Role, default_role=Role.CLIENT)):
+class User(UserMixin(role_enum=Role, default_role=Role.CLIENT), AuthUserMixin):
     __tablename__ = "users"
 
     name: Mapped[str] = mapped_column(sa.Text)

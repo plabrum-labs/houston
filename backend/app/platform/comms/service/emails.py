@@ -9,6 +9,7 @@ from litestar.contrib.jinja import JinjaTemplateEngine
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
+from app.platform.comms.clients.email import BaseEmailClient
 from app.platform.comms.enums import CommsTaskName, MessageDirection, MessageState
 from app.platform.comms.models.messages import Message
 from app.platform.queue.transactions import dispatch_task
@@ -20,10 +21,17 @@ class EmailService:
     """High-level email service: validates addresses, renders templates, persists
     a Message row, and enqueues the SEND_EMAIL task after commit."""
 
-    def __init__(self, template_engine: JinjaTemplateEngine, transaction: AsyncSession, request: Request):
+    def __init__(
+        self,
+        template_engine: JinjaTemplateEngine,
+        transaction: AsyncSession,
+        request: Request,
+        email_client: BaseEmailClient,
+    ):
         self.template_engine = template_engine
         self.transaction = transaction
         self.request = request
+        self.email_client = email_client
 
     def validate_email_address(self, email: str) -> str:
         try:
@@ -81,7 +89,12 @@ class EmailService:
         self.transaction.add(record)
         await self.transaction.flush()
 
-        await dispatch_task(self.transaction, self.request, CommsTaskName.SEND_EMAIL, message_id=record.id)
+        # Inline (QUEUE_SYNC) dispatch builds a ctx carrying only `config`, so the
+        # SEND_EMAIL task can't pull `email_client` from ctx — pass it explicitly. In
+        # async mode the worker's startup hook supplies the client, and a client isn't
+        # queue-serializable, so it's only passed on the inline path.
+        extra: dict[str, Any] = {"email_client": self.email_client} if config.QUEUE_SYNC else {}
+        await dispatch_task(self.transaction, self.request, CommsTaskName.SEND_EMAIL, message_id=record.id, **extra)
         return record.id
 
     async def send_magic_link_email(
