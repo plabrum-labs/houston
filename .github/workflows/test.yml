@@ -1,0 +1,14 @@
+name: Test Backend
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/test.yml"
+      - ".github/workflows/_test.yml"
+
+jobs:
+  test:
+    uses: ./.github/workflows/_test.yml
+    secrets: inherit

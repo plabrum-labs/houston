@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.env.local
+node_modules/
+
+# Playwright MCP capture artifacts
+.playwright-mcp/
